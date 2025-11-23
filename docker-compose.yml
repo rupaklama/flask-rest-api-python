@@ -1,0 +1,10 @@
+version: '3'
+services:
+  web:
+    build: .
+    # Map my local port 5001 to container's port 5000
+    ports:
+      - "5001:5000"
+    # Mount the current project directory to /app in the container
+    volumes:
+      - .:/app
