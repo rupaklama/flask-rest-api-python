@@ -43,21 +43,23 @@ def create_store():
 
 @app.delete('/store/<string:store_id>')
 def delete_store(store_id):
-    removed = stores.pop(store_id, None)
-    if removed is not None:
+    try:
+        del stores[store_id]
         return {'message': 'Store deleted'}, 200
-    return {'message': 'Store not found'}, 404
+    except KeyError:
+        abort(404, message='Store not found')
 
 
 @app.get('/item')
 def get_items():
+    return 'hello, items!'
     return {'items': list(items.values())}
-  
-  
+
+
 @app.get('/item/<string:item_id>')
 def get_item(item_id):
     try:
-        return items[int(item_id)]
+        return items[item_id]
     except KeyError:
         abort(404, message='Item not found')
 
@@ -87,3 +89,26 @@ def create_item():
     return new_item, 201
   
 
+@app.delete('/item/<string:item_id>')
+def delete_item(item_id):
+    try:
+      del items[item_id]
+      return {'message': 'Item deleted'}, 200
+    except KeyError:
+      abort(404, message='Item not found')
+      
+@app.put('/item/<string:item_id>')
+def update_item(item_id):
+    request_data = request.get_json()
+    if (
+      'price' not in request_data or
+      'name' not in request_data 
+    ):
+        abort(400, message='Missing required fields')
+        
+    try:
+        item = items[item_id]
+        item.update(request_data)
+        return item, 200
+    except KeyError:
+        abort(404, message='Item not found')
