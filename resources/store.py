@@ -1,8 +1,8 @@
 import uuid
-from flask import request
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from db import stores
+from schemas import StoreCreateSchema
 
 # Blueprint is a way to organize a group of related routes and views
 bp = Blueprint('stores', __name__, description='Operations on stores')
@@ -11,14 +11,13 @@ bp = Blueprint('stores', __name__, description='Operations on stores')
 # With /store crud operations
 @bp.route('/store')
 class StoreList(MethodView):
+    @bp.response(200, StoreCreateSchema(many=True))
     def get(self):
-        return {'stores': list(stores.values())}
+        return stores.values()
 
-    def post(self):
-        request_data = request.get_json()
-        if 'name' not in request_data:
-            abort(400, message='Missing required field: name')
-
+    @bp.arguments(StoreCreateSchema)
+    @bp.response(201, StoreCreateSchema)
+    def post(self, request_data):
         for store in stores.values():
             if store['name'] == request_data['name']:
                 abort(400, message='Store with the same name already exists')
@@ -36,6 +35,7 @@ class StoreList(MethodView):
 # With /store/<store_id> crud operations
 @bp.route('/store/<string:store_id>')
 class StoreDetail(MethodView):
+    @bp.response(200, StoreCreateSchema)
     def get(self, store_id):
         try:
             return stores[store_id]

@@ -3,6 +3,7 @@ from flask_smorest import Blueprint, abort  # noqa
 from flask import request
 from flask.views import MethodView
 from db import items, stores
+from schemas import ItemSchema, ItemUpdateSchema
 
 # Blueprint is a way to organize a group of related routes and views
 bp = Blueprint('items', __name__, description='Operations on items')
@@ -10,18 +11,21 @@ bp = Blueprint('items', __name__, description='Operations on items')
 # With /item crud operations
 @bp.route('/item')
 class ItemList(MethodView):
-    """List all items."""
+    # many=True indicates that we expect a list of items to be returned
+    @bp.response(200, ItemSchema(many=True))
     def get(self):
-        return {'items': list(items.values())}
+        return items.values()
       
-    def post(self):
-        request_data = request.get_json()
-        if (
-            'price' not in request_data
-            or 'name' not in request_data
-            or 'store_id' not in request_data
-        ):
-            abort(400, message='Missing required fields')
+    @bp.arguments(ItemSchema)
+    @bp.response(201, ItemSchema)
+    # request_data is the validated data from the request body
+    def post(self, request_data):
+        # if (
+        #     'price' not in request_data
+        #     or 'name' not in request_data
+        #     or 'store_id' not in request_data
+        # ):
+        #     abort(400, message='Missing required fields')
 
         for item in items.values():
             if item['name'] == request_data['name']:
@@ -45,7 +49,8 @@ class ItemList(MethodView):
 # With /item/<item_id> crud operations
 @bp.route('/item/<string:item_id>')
 class ItemDetail(MethodView):
-    """Operations for a single item."""
+    # Decorator generating an endpoint response 
+    @bp.response(200, ItemSchema)
     def get(self, item_id):
         try:
             return items[item_id]
@@ -58,15 +63,11 @@ class ItemDetail(MethodView):
             return {'message': 'Item deleted'}, 200
         except KeyError:
             abort(404, message='Item not found')
-
-    def put(self, item_id):
-        request_data = request.get_json()
-        if (
-            'price' not in request_data
-            or 'name' not in request_data
-        ):
-            abort(400, message='Missing required fields')
-
+            
+    @bp.arguments(ItemUpdateSchema)
+    @bp.response(200, ItemSchema)
+    # request_data comes before item_id because of the order of parameters in the method
+    def put(self, request_data, item_id):
         try:
             item = items[item_id]
             item.update(request_data)
